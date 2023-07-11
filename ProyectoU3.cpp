@@ -382,7 +382,7 @@ void carrera(int set, vector<int>& datos, bool orden)
     // Quick Sort
     vector<int> a3 = datos;
      inicio = std::chrono::high_resolution_clock::now();
-    quickSort(a3, 0, datos.size() - 1, true);
+    quickSort(a3, 0, a3.size() - 1, true);
     fin = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duracion3 = fin - inicio;
     cout << "3. Quick Sort, " << duracion3.count() << " segundos" << endl;
@@ -397,7 +397,7 @@ void carrera(int set, vector<int>& datos, bool orden)
     // Merge Sort
     vector<int> a4 = datos;
     inicio = std::chrono::high_resolution_clock::now();
-    mergeSort(a4, 0, datos.size() - 1, true);
+    mergeSort(a4, 0, a4.size() - 1, true);
     fin = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duracion4 = fin - inicio;
     cout << "4. Merge Sort, " << duracion4.count() << " segundos" << endl;
@@ -497,8 +497,8 @@ int main()
 
     // Desordenar los conjuntos de datos adicionales
     shuffle(random_duplicates_score.begin(), random_duplicates_score.end(), gen);
-    shuffle(ordered_vector_score.begin(), ordered_vector_score.end(), gen);
-    shuffle(reverse_ordered_vector_score.begin(), reverse_ordered_vector_score.end(), gen);
+    //shuffle(ordered_vector_score.begin(), ordered_vector_score.end(), gen);
+    //shuffle(reverse_ordered_vector_score.begin(), reverse_ordered_vector_score.end(), gen);
 
     /* CAMINOS ENTRE ALDEAS */
     // Cantidad de números aleatorios a generar (entre 50.000 y 70.000)
