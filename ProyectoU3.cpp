@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <iterator>
 #include <chrono>
+#include <stack>
+#include <utility>
+#include <vector>
+#include <numeric>
 
 using namespace std;
 using std::cout;
@@ -125,45 +129,51 @@ void heapSort(vector<int>& datos, bool orden)
     }
 }
 
-int partition(vector<int>& datos, int inicio, int fin, bool orden)
-{
-    int pivote = datos[fin];
-    int i = inicio - 1;
-
-    for (int j = inicio; j <= fin - 1; ++j)
-    {
-        if (orden)
-        {
-            if (datos[j] < pivote)
-            {
-                ++i;
-                swap(datos[i], datos[j]);
-            }
-        }
-        else
-        {
-            if (datos[j] > pivote)
-            {
-                ++i;
-                swap(datos[i], datos[j]);
-            }
-        }
-    }
-
-    swap(datos[i + 1], datos[fin]);
-    return i + 1;
-}
-
-// Quick Sort
 void quickSort(vector<int>& datos, int inicio, int fin, bool orden)
 {
-    if (inicio < fin)
+    stack<pair<int, int>> pila;
+    pila.push(make_pair(inicio, fin));
+
+    while (!pila.empty())
     {
-        int indicePivote = partition(datos, inicio, fin, orden);
-        quickSort(datos, inicio, indicePivote - 1, orden);
-        quickSort(datos, indicePivote + 1, fin, orden);
+        int inicioActual = pila.top().first;
+        int finActual = pila.top().second;
+        pila.pop();
+
+        if (inicioActual >= finActual)
+            continue;
+
+        int pivote = datos[finActual];
+        int i = inicioActual - 1;
+
+        for (int j = inicioActual; j <= finActual - 1; ++j)
+        {
+            if (orden)
+            {
+                if (datos[j] < pivote)
+                {
+                    ++i;
+                    swap(datos[i], datos[j]);
+                }
+            }
+            else
+            {
+                if (datos[j] > pivote)
+                {
+                    ++i;
+                    swap(datos[i], datos[j]);
+                }
+            }
+        }
+
+        swap(datos[i + 1], datos[finActual]);
+        int indicePivote = i + 1;
+
+        pila.push(make_pair(inicioActual, indicePivote - 1));
+        pila.push(make_pair(indicePivote + 1, finActual));
     }
 }
+
 
 void merge(vector<int>& datos, int inicio, int medio, int fin, bool orden)
 {
@@ -236,7 +246,7 @@ void mergeSort(vector<int>& datos, int inicio, int fin, bool orden)
 }
 
 // Selection Sort
-void selectionSort(vector<int>& datos, bool ascendente)
+void selectionSort(vector<int>& datos, bool orden)
 {
     int tamano = datos.size();
 
@@ -245,7 +255,7 @@ void selectionSort(vector<int>& datos, bool ascendente)
         int indiceExtremo = i;
         for (int j = i + 1; j < tamano; ++j)
         {
-            if (ascendente)
+            if (orden)
             {
                 if (datos[j] < datos[indiceExtremo])
                 {
@@ -382,7 +392,7 @@ void carrera(int set, vector<int>& datos, bool orden)
     // Quick Sort
     vector<int> a3 = datos;
      inicio = std::chrono::high_resolution_clock::now();
-    quickSort(a3, 0, a3.size() - 1, true);
+    quickSort(a3, 0, a3.size() - 1, orden);
     fin = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duracion3 = fin - inicio;
     cout << "3. Quick Sort, " << duracion3.count() << " segundos" << endl;
@@ -397,7 +407,7 @@ void carrera(int set, vector<int>& datos, bool orden)
     // Merge Sort
     vector<int> a4 = datos;
     inicio = std::chrono::high_resolution_clock::now();
-    mergeSort(a4, 0, a4.size() - 1, true);
+    mergeSort(a4, 0, a4.size() - 1, orden);
     fin = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duracion4 = fin - inicio;
     cout << "4. Merge Sort, " << duracion4.count() << " segundos" << endl;
@@ -458,86 +468,169 @@ void carrera(int set, vector<int>& datos, bool orden)
 
 }
 
-int main() 
+// Función para generar números aleatorios únicos en un rango determinado
+set<int> generateRandomNumbers(int count, int rangeStart, int rangeEnd)
 {
-    /* TABLERO DE PUNTAJES */
-    // Configuración de la generación de números aleatorios
+    random_device rd;
+    mt19937 gen(rd());
+    set<int> randomNumbers;
+
+    while (randomNumbers.size() < count)
+    {
+        uniform_int_distribution<int> dis_range(rangeStart, rangeEnd);
+        int num = dis_range(gen);
+        randomNumbers.insert(num);
+    }
+
+    return randomNumbers;
+}
+
+// Función para convertir un set en un vector y desordenar los elementos
+vector<int> convertAndShuffle(set<int>& numbersSet)
+{
+    vector<int> numbersVector(numbersSet.begin(), numbersSet.end());
+    random_device rd;
+    mt19937 gen(rd());
+    shuffle(numbersVector.begin(), numbersVector.end(), gen);
+    return numbersVector;
+}
+
+// Función para generar un conjunto de datos aleatorio sin repetición
+vector<int> generateRandomData(int countMin, int countMax, int rangeStart, int rangeEnd)
+{
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<int> dis_count(countMin, countMax);
+    int count = dis_count(gen);
+
+    set<int> randomNumbers = generateRandomNumbers(count, rangeStart, rangeEnd);
+    return convertAndShuffle(randomNumbers);
+}
+
+// Función para generar un conjunto de datos aleatorio con posibilidad de duplicados
+vector<int> generateRandomDuplicatesData(int countMin, int countMax, int rangeStart, int rangeEnd)
+{
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<int> dis_count(countMin, countMax);
+    int count = dis_count(gen);
+
+    vector<int> randomDuplicatesData(count);
+    uniform_int_distribution<int> dis_positive(rangeStart, rangeEnd);
+
+    generate(randomDuplicatesData.begin(), randomDuplicatesData.end(), [&gen, &dis_positive]() {
+        return dis_positive(gen);
+    });
+
+    return randomDuplicatesData;
+}
+
+// Función para generar un conjunto de datos ordenado (ascendente o descendente)
+vector<int> generateOrderedData(int countMin, int countMax, int startValue, bool ascending)
+{
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<int> dis_count(countMin, countMax);
+    int count = dis_count(gen);
+
+    vector<int> orderedData(count);
+    iota(orderedData.begin(), orderedData.end(), startValue);
+
+    if (!ascending)
+    {
+        reverse(orderedData.begin(), orderedData.end());
+    }
+
+    return orderedData;
+}
+
+// Función para generar un conjunto de datos con variación de objetos por categoría
+vector<vector<int>> generateObjectData(int categoryCount, int objectCountMin, int objectCountMax)
+{
     random_device rd;
     mt19937 gen(rd());
 
-    // Cantidad de números aleatorios a generar (entre 90.000 y 100.000)
-    uniform_int_distribution<int> dis_count(90000, 100000);
-    int num_count = dis_count(gen);
+    vector<vector<int>> objectData(categoryCount);
 
-    // Generar números aleatorios únicos
-    set<int> random_numbers_score;
-    while (random_numbers_score.size() < num_count)
+    for (int category = 0; category < categoryCount; ++category)
     {
-        uniform_int_distribution<int> dis_range(0, 1000000);
-        int num = dis_range(gen);
-        random_numbers_score.insert(num);
+        uniform_int_distribution<int> dis_count(objectCountMin, objectCountMax);
+        int objectCount = dis_count(gen);
+
+        set<int> randomNumbers = generateRandomNumbers(objectCount, 1, 1000); // Rango de objetos disponibles
+        objectData[category] = convertAndShuffle(randomNumbers);
     }
 
-    // Convertir el set en un vector y desordenar los números
-    vector<int> random_vector_score(random_numbers_score.begin(), random_numbers_score.end());
-    shuffle(random_vector_score.begin(), random_vector_score.end(), gen);
+    return objectData;
+}
 
-    // Generar números aleatorios para el conjunto Aleatorio con duplicados (sin negativos)
-    vector<int> random_duplicates_score(num_count);
-    uniform_int_distribution<int> dis_positive(0, numeric_limits<int>::max());
-    generate(random_duplicates_score.begin(), random_duplicates_score.end(), [&gen, &dis_positive]() { return dis_positive(gen); });
+// Función para generar un conjunto de datos de carrera a partir de un conjunto de objetos
+vector<int> generateRaceData(const vector<int>& objectData, bool randomize, bool allowDuplicates, bool ascendingOrder)
+{
+    vector<int> raceData = objectData;
 
-    // Generar números ordenados para el conjunto Ordenado (ascendente)
-    vector<int> ordered_vector_score(num_count);
-    iota(ordered_vector_score.begin(), ordered_vector_score.end(), 1);
-
-    // Generar números ordenados en forma inversa para el conjunto Inversamente ordenado (descendente)
-    vector<int> reverse_ordered_vector_score(num_count);
-    iota(reverse_ordered_vector_score.rbegin(), reverse_ordered_vector_score.rend(), 1);
-
-    // Desordenar los conjuntos de datos adicionales
-    shuffle(random_duplicates_score.begin(), random_duplicates_score.end(), gen);
-    //shuffle(ordered_vector_score.begin(), ordered_vector_score.end(), gen);
-    //shuffle(reverse_ordered_vector_score.begin(), reverse_ordered_vector_score.end(), gen);
-
-    /* CAMINOS ENTRE ALDEAS */
-    // Cantidad de números aleatorios a generar (entre 50.000 y 70.000)
-    uniform_int_distribution<int> dis_count_roads(50000, 70000);
-    int num_count_roads = dis_count_roads(gen);
-
-    // Generar números aleatorios únicos
-    set<int> random_numbers_roads;
-    while (random_numbers_roads.size() < num_count_roads)
+    if (randomize)
     {
-        uniform_int_distribution<int> dis_range(0, 1000000);
-        int num = dis_range(gen);
-        random_numbers_roads.insert(num);
+        shuffle(raceData.begin(), raceData.end(), std::mt19937(std::random_device()()));
     }
 
-    // Convertir el set en un vector y desordenar los números
-    vector<int> random_vector_roads(random_numbers_roads.begin(), random_numbers_roads.end());
-    shuffle(random_vector_roads.begin(), random_vector_roads.end(), gen);
+    if (!allowDuplicates)
+    {
+        sort(raceData.begin(), raceData.end());
+        raceData.erase(unique(raceData.begin(), raceData.end()), raceData.end());
+    }
 
-    // Generar números aleatorios para el conjunto Aleatorio con duplicados (sin negativos)
-    vector<int> random_duplicates_roads(num_count);
-    uniform_int_distribution<int> dis_positive_roads(0, numeric_limits<int>::max());
-    generate(random_duplicates_roads.begin(), random_duplicates_roads.end(), [&gen, &dis_positive_roads]() { return dis_positive_roads(gen); });
+    if (!ascendingOrder)
+    {
+        reverse(raceData.begin(), raceData.end());
+    }
 
-    // Generar números ordenados para el conjunto Ordenado (ascendente)
-    vector<int> ordered_vector_roads(num_count);
-    iota(ordered_vector_roads.begin(), ordered_vector_roads.end(), 1);
+    return raceData;
+}
 
-    // Generar números ordenados en forma inversa para el conjunto Inversamente ordenado (descendente)
-    vector<int> reverse_ordered_vector_roads(num_count);
-    iota(reverse_ordered_vector_roads.rbegin(), reverse_ordered_vector_roads.rend(), 1);
+int main() 
+{
+    // Generar y desordenar el conjunto de datos del tablero de puntaje
+    vector<int> randomVectorScore = generateRandomData(90000, 100000, 0, 1000000);
+    vector<int> randomDuplicatesScore = generateRandomDuplicatesData(90000, 100000, 0, 1000000);
+    vector<int> orderedVectorScore = generateOrderedData(90000, 100000, 1, true);
+    vector<int> reverseOrderedVectorScore = generateOrderedData(90000, 100000, 1, false);
 
-    // Desordenar los conjuntos de datos adicionales
-    shuffle(random_duplicates_roads.begin(), random_duplicates_roads.end(), gen);
-    shuffle(ordered_vector_roads.begin(), ordered_vector_roads.end(), gen);
-    shuffle(reverse_ordered_vector_roads.begin(), reverse_ordered_vector_roads.end(), gen);
+    // Generar y desordenar el conjunto de datos para la determinación de caminos entre aldeas
+    vector<int> randomVectorRoads = generateRandomData(50000, 70000, 0, 1000000);
+    vector<int> randomDuplicatesRoads = generateRandomDuplicatesData(50000, 70000, 0, 1000000);
+    vector<int> orderedVectorRoads = generateOrderedData(50000, 70000, 1, true);
+    vector<int> reverseOrderedVectorRoads = generateOrderedData(50000, 70000, 1, false);
 
-    cout << "Datos en arreglo 1 " << random_numbers_score.size() << endl;
-    cout << "Datos en arreglo 2 " << random_numbers_roads.size() << endl;
+    // Generar los conjuntos de datos para el dibujo o renderizado de objetos
+    int categoryCount = 15;
+    int objectCountMin = 500;
+    int objectCountMax = 1000;
+
+    vector<vector<int>> objectData = generateObjectData(categoryCount, objectCountMin, objectCountMax);
+
+    // Generar los conjuntos de datos de carrera con las características requeridas
+    bool randomize = true;
+    bool allowDuplicates = false;
+    bool ascendingOrder = true;
+
+    vector<vector<int>> raceData;
+
+    for (const auto& objectSet : objectData)
+    {
+        vector<int> randomRace = generateRaceData(objectSet, randomize, allowDuplicates, ascendingOrder);
+        vector<int> duplicatedRace = generateRaceData(objectSet, randomize, !allowDuplicates, ascendingOrder);
+        vector<int> orderedRace = generateRaceData(objectSet, false, allowDuplicates, ascendingOrder);
+        vector<int> reverseOrderedRace = generateRaceData(objectSet, false, allowDuplicates, !ascendingOrder);
+
+        raceData.push_back(randomRace);
+        raceData.push_back(duplicatedRace);
+        raceData.push_back(orderedRace);
+        raceData.push_back(reverseOrderedRace);
+    }
+
+    cout << "Datos en arreglo 1 " << randomVectorScore.size() << endl;
+    cout << "Datos en arreglo 2 " << randomVectorRoads.size() << endl;
 
     cout << "Carrera de algoritmos" << endl;
     cout << "1. Ascendente." << endl; // true
@@ -545,7 +638,7 @@ int main()
     cout << "Opción elegida: " << endl;
     int opcion;
     cin >> opcion;
-
+    int set = 1;
     // Seleccionar el algoritmo de ordenamiento según la opción ingresada
     switch (opcion) 
     {
@@ -553,30 +646,39 @@ int main()
             
             // Ejecutar el algoritmo de ordenamiento ascendente con los datos generados para el tablero
             cout << "Carrera con el Tablero:";
-            carrera(1, random_vector_score, true);
-            carrera(2, random_duplicates_score, true);
-            carrera(3, ordered_vector_score, true);
-            carrera(4, reverse_ordered_vector_score, true);
+            carrera(1, randomVectorScore, true);
+            carrera(2, randomDuplicatesScore, true);
+            carrera(3, orderedVectorScore, true);
+            carrera(4, reverseOrderedVectorScore, true);
             // Ejecutar el algoritmo de ordenamiento ascendente con los datos generados para los caminos
             cout << "Carrera con los posibles Caminos:";
-            carrera(1, random_vector_roads, true);
-            carrera(2, random_duplicates_roads, true);
-            carrera(3, ordered_vector_roads, true);
-            carrera(4, reverse_ordered_vector_roads, true);
+            carrera(1, randomVectorRoads, true);
+            carrera(2, randomDuplicatesRoads, true);
+            carrera(3, orderedVectorRoads, true);
+            carrera(4, reverseOrderedVectorRoads, true);
+            cout << "Carrera con categorias:";
+            // Realizar las carreras con los conjuntos de datos generados
+            
+            for (auto& race : raceData)
+            {
+                bool orden = true;
+                carrera(set, race, orden);
+                set++;
+            }
             break;
         case 2:
             // Ejecutar el algoritmo de ordenamiento descendente con los datos generados para el tablero
             cout << "Carrera con el Tablero:";
-            carrera(1, random_vector_score, false);
-            carrera(2, random_duplicates_score, false);
-            carrera(3, ordered_vector_score, false);
-            carrera(4, reverse_ordered_vector_score, false);
+            carrera(1, randomVectorScore, false);
+            carrera(2, randomDuplicatesScore, false);
+            carrera(3, orderedVectorScore, false);
+            carrera(4, reverseOrderedVectorScore, false);
             // Ejecutar el algoritmo de ordenamiento ascendente con los datos generados para los caminos
             cout << "Carrera con los posibles Caminos:";
-            carrera(1, random_vector_roads, false);
-            carrera(2, random_duplicates_roads, false);
-            carrera(3, ordered_vector_roads, false);
-            carrera(4, reverse_ordered_vector_roads, false);
+            carrera(1, randomVectorRoads, false);
+            carrera(2, randomDuplicatesRoads, false);
+            carrera(3, orderedVectorRoads, false);
+            carrera(4, reverseOrderedVectorRoads, false);
             break;
         default:
             std::cout << "Opción inválida" << std::endl;
